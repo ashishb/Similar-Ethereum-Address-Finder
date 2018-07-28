@@ -9,6 +9,7 @@ import (
 	"math"
 	"regexp"
 	"strings"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -17,7 +18,7 @@ import (
 
 // Command line flag parsing
 type stringsFlag struct {
-	set   bool
+	set bool
 	value []string
 }
 
@@ -30,6 +31,25 @@ func (sf *stringsFlag) Set(x string) error {
 
 func (sf *stringsFlag) String() string {
 	return strings.Join(sf.value, ",")
+}
+
+type IntFlag struct {
+	set bool
+	value int
+}
+
+func (intFlag *IntFlag) Set(x string) error {
+	value, error := strconv.Atoi(x)
+	if error != nil {
+		return error
+	}
+	intFlag.value = value
+	intFlag.set = true
+	return nil
+}
+
+func (intFlag *IntFlag) String() string {
+	return string(intFlag.value)
 }
 
 // Word validation code
@@ -136,12 +156,17 @@ func foundAddress(address string, privateKey string) {
 // prefix, suffix from cli
 var prefixes stringsFlag
 var suffixes stringsFlag
+var threadCount IntFlag
 var key *ecdsa.PrivateKey
+
+const defaultThreadCount = 16
 
 func init() {
 	flag.Var(&prefixes, "p", "Comma-separated list of prefixes")
 	flag.Var(&suffixes, "s", "Comma-separated list of suffixes")
+	flag.Var(&threadCount, "t", fmt.Sprintf("Num threads (default: %d)", defaultThreadCount))
 }
+
 
 // Usage: -p 12,13,14 -s 89,678,56 -> This will try to find an address with
 // 1. prefix = 12 and suffix = 89 or,
@@ -151,7 +176,6 @@ func init() {
 // If both are provided then they should have same number of elements.
 // The program execution stops at the first match.
 func main() {
-	threadCount := 16
 	var word string
 	flag.Parse()
 	ch := make(chan bool)
@@ -172,8 +196,12 @@ func main() {
 		prefixes.value = make([]string, len(suffixes.value))
 	}
 	fmt.Printf("Finding matches with prefixes = %v and suffixes = %v\n", prefixes.value, suffixes.value)
-	printAttemptEstimates(prefixes.value, suffixes.value, threadCount)
-	for i := 0; i < threadCount; i++ {
+	numThreads := defaultThreadCount
+	if threadCount.set {
+		numThreads = threadCount.value
+	}
+	printAttemptEstimates(prefixes.value, suffixes.value, numThreads)
+	for i := 0; i < numThreads; i++ {
 		go findTheMatch(prefixes.value, suffixes.value, word, ch)
 	}
 	<-ch
