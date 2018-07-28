@@ -172,7 +172,7 @@ func main() {
 		prefixes.value = make([]string, len(suffixes.value))
 	}
 	fmt.Printf("Finding matches with prefixes = %v and suffixes = %v\n", prefixes.value, suffixes.value)
-	printAttemptEstimates(prefixes.value, suffixes.value)
+	printAttemptEstimates(prefixes.value, suffixes.value, threadCount)
 	for i := 0; i < threadCount; i++ {
 		go findTheMatch(prefixes.value, suffixes.value, word, ch)
 	}
@@ -185,7 +185,7 @@ func findTheMatch(prefixes []string, suffixes []string, word string, ch chan boo
 	ch <- true
 }
 
-func printAttemptEstimates(prefixes []string, suffixes []string) {
+func printAttemptEstimates(prefixes []string, suffixes []string, threadCount int) {
 	harmonicSum := 0.0
 	for i, _ := range prefixes {
 		numNibbles := len(prefixes[i]) + len(suffixes[i])
@@ -197,5 +197,7 @@ func printAttemptEstimates(prefixes []string, suffixes []string) {
 				"with 100%% probability.\n\t%d attempts suffice for 50%% probability of finding a match.\n",
 			numAttempts, prefixes[i], suffixes[i], numAttempts / 2)
 	}
-	fmt.Printf("Overall number of attempts across all pairs is %d\n", int(1.0 / harmonicSum))
+	numAttempts := int(1.0 / harmonicSum) / threadCount
+	fmt.Printf("Overall number of attempts across all pairs is %d for 100%% probability and %d for 50%% probability\n",
+		numAttempts, numAttempts / 2)
 }
