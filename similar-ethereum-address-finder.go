@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"math"
 	"regexp"
 	"strings"
 
@@ -142,7 +143,6 @@ func init() {
 	flag.Var(&suffixes, "s", "Comma-separated list of suffixes")
 }
 
-
 // Usage: -p 12,13,14 -s 89,678,56 -> This will try to find an address with
 // 1. prefix = 12 and suffix = 89 or,
 // 2. prefix = 13 and suffix = 678 or,
@@ -172,6 +172,7 @@ func main() {
 		prefixes.value = make([]string, len(suffixes.value))
 	}
 	fmt.Printf("Finding matches with prefixes = %v and suffixes = %v\n", prefixes.value, suffixes.value)
+	printAttemptEstimates(prefixes.value, suffixes.value)
 	for i := 0; i < threadCount; i++ {
 		go findTheMatch(prefixes.value, suffixes.value, word, ch)
 	}
@@ -182,4 +183,19 @@ func findTheMatch(prefixes []string, suffixes []string, word string, ch chan boo
 	address, privateKey := searchAddress(prefixes, suffixes)
 	foundAddress(address, privateKey)
 	ch <- true
+}
+
+func printAttemptEstimates(prefixes []string, suffixes []string) {
+	harmonicSum := 0.0
+	for i, _ := range prefixes {
+		numNibbles := len(prefixes[i]) + len(suffixes[i])
+		numBits := 4 * numNibbles
+		numAttempts := int(math.Pow(2, float64(numBits)))
+		harmonicSum += 1/float64(numAttempts)
+		fmt.Printf(
+			"It will take %d attempts for finding a ETH address matching (prefix: \"%s\",suffix: \"%s\") " +
+				"with 100%% probability.\n\t%d attempts suffice for 50%% probability of finding a match.\n",
+			numAttempts, prefixes[i], suffixes[i], numAttempts / 2)
+	}
+	fmt.Printf("Overall number of attempts across all pairs is %d\n", int(1.0 / harmonicSum))
 }
