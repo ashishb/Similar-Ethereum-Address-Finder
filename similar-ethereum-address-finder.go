@@ -110,7 +110,7 @@ func searchAddress(prefix []string, suffix []string) (string, string) {
 	count := 0
 
 	for !found {
-		if (count % 10000) == 0 {
+		if (count % 50000) == 0 {
 			fmt.Printf("Attempt: %d\n", count)
 		}
 		count++
@@ -218,11 +218,11 @@ func printAttemptEstimates(prefixes []string, suffixes []string, threadCount int
 	for i, _ := range prefixes {
 		numNibbles := len(prefixes[i]) + len(suffixes[i])
 		numBits := 4 * numNibbles
-		numAttempts := int(math.Pow(2, float64(numBits)))
+		numAttempts := math.Pow(2, float64(numBits))
 		harmonicSum += 1/float64(numAttempts)
 		fmt.Printf(
-			"It will take %d attempts for finding a ETH address matching (prefix: \"%s\",suffix: \"%s\") " +
-				"with 100%% probability.\n\t%d attempts suffice for 50%% probability of finding a match.\n",
+			"It will take %.1f attempts for finding a ETH address matching (prefix: \"%s\",suffix: \"%s\") " +
+				"with 100%% probability.\n\t%.1f attempts suffice for 50%% probability of finding a match.\n",
 			numAttempts, prefixes[i], suffixes[i], numAttempts / 2)
 	}
 	numAttempts := int(1.0 / harmonicSum) / threadCount
