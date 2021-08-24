@@ -65,14 +65,14 @@ func validateWord(word string) {
 	}
 }
 
-func generateAccount() string {
+func generateAccount() (string, *ecdsa.PrivateKey) {
 	// 1. generate private key, ECDSA(private key)  => public key
 	key, _ := crypto.GenerateKey()
 	pubKey := key.PublicKey
 	// 2. public key => address
 	address := crypto.PubkeyToAddress(pubKey)
 	addressHex := hex.EncodeToString(address[:])
-	return addressHex
+	return addressHex, key
 }
 
 func searchAddress(prefix []string, suffix []string) (string, string) {
@@ -107,6 +107,7 @@ func searchAddress(prefix []string, suffix []string) (string, string) {
 
 	found := false
 	var address string
+	var key *ecdsa.PrivateKey
 	count := 0
 
 	for !found {
@@ -114,7 +115,7 @@ func searchAddress(prefix []string, suffix []string) (string, string) {
 			fmt.Printf("Attempt: %d\n", count)
 		}
 		count++
-		address = generateAccount()
+		address, key = generateAccount()
 		var addressPrefix string
 		var addressSuffix string
 		if allPrefixesHaveSameLengths {
@@ -145,19 +146,19 @@ func searchAddress(prefix []string, suffix []string) (string, string) {
 	}
 
 	privateKey := hex.EncodeToString(crypto.FromECDSA(key))
+	// fmt.Printf("Converting key: \"%s\" to privateKey: \"%s\"\n", key, privateKey)
 	return address, privateKey
 }
 
 func foundAddress(address string, privateKey string) {
 	fmt.Printf("Address: 0x%s\n", address)
-	fmt.Printf("PrivateKey: %s\n\n", privateKey)
+	fmt.Printf("PrivateKey: \"%s\"\n\n", privateKey)
 }
 
 // prefix, suffix from cli
 var prefixes stringsFlag
 var suffixes stringsFlag
 var threadCount IntFlag
-var key *ecdsa.PrivateKey
 
 const defaultThreadCount = 16
 
@@ -176,7 +177,6 @@ func init() {
 // If both are provided then they should have same number of elements.
 // The program execution stops at the first match.
 func main() {
-	var word string
 	flag.Parse()
 	ch := make(chan bool)
 	for i, _ := range prefixes.value {
@@ -202,12 +202,12 @@ func main() {
 	}
 	printAttemptEstimates(prefixes.value, suffixes.value, numThreads)
 	for i := 0; i < numThreads; i++ {
-		go findTheMatch(prefixes.value, suffixes.value, word, ch)
+		go findTheMatch(prefixes.value, suffixes.value, ch)
 	}
 	<-ch
 }
 
-func findTheMatch(prefixes []string, suffixes []string, word string, ch chan bool) {
+func findTheMatch(prefixes []string, suffixes []string, ch chan bool) {
 	address, privateKey := searchAddress(prefixes, suffixes)
 	foundAddress(address, privateKey)
 	ch <- true
