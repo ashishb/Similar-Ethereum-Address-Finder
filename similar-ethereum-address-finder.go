@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"os"
 	"math"
+	"os"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -22,7 +22,7 @@ type stringsFlag struct {
 	value []string
 }
 
-// set variable checks for the existence of a flag
+// Set checks variable for the existence of a flag
 func (sf *stringsFlag) Set(x string) error {
 	sf.value = strings.Split(x, ",")
 	sf.set = true
@@ -67,7 +67,7 @@ func validateWord(word string) {
 
 func generateAccount() string {
 	// 1. generate private key, ECDSA(private key)  => public key
-	key, _ = crypto.GenerateKey()
+	key, _ := crypto.GenerateKey()
 	pubKey := key.PublicKey
 	// 2. public key => address
 	address := crypto.PubkeyToAddress(pubKey)
